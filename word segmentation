@@ -1,0 +1,86 @@
+import sys
+import re
+import codecs
+import os
+import jieba
+import jieba.analyse
+import xlwt#写入Excel表
+import xlrd #读取excel表
+from datetime import date,datetime
+import xdrlib,sys
+
+#导入自定义词典
+jieba.load_userdict("dict_review.txt")
+#Read file and cut
+
+
+#从多个文本文件读取（0001，0002，0003），写入到多个文本文件中（0001，0002，0003）
+def read_file_cut():
+    #创建路径
+    path = "wenben\\"  # 分词文件路径
+    respath = "wenbencut\\"  # 分词结果存放路径
+    num=1
+    while num<=3: # 分词文本数
+        name = "%04d" % num
+        fileName = path + str(name) + ".txt"#分词文件名
+        print(fileName)
+        resName = respath + str(name) + ".txt"  # 分词结果存放文件名
+        source = open(fileName, 'r', encoding='utf-8')
+        result = codecs.open(resName, 'w', 'utf-8')
+        line = source.readline()  # 按行读取文件
+        line = line.rstrip('\n')
+        print(line)
+        while line != "":
+            line = line.encode("utf-8")
+            seglist = jieba.cut(line, cut_all=False)  # 精准模式
+            output = "/".join(list(seglist))  # 空格拼接
+            print(output)
+            result.write(output + '\r\n')
+            line = source.readline()
+        else:
+            print('End file:' + str(num))
+            source.close()
+            result.close()
+        num = num + 1
+    else:
+        print("End All")
+#从一个EXcel文件中导入多个sheet表数据
+def read_excel_cut():
+    #打开文件
+    wb=xlrd.open_workbook("excel\\0001.xls") #读取文本文件
+    #创建workbook
+    file = xlwt.Workbook(encoding='utf-8')
+    #获取所有sheet
+    sheets=wb.sheet_names()
+    print(sheets)
+    num=0
+    for i in range(len(sheets)):
+        #sheet=wb[sheets[i]]
+        sheet=file.sheet_by_index(num)#sheet 索引从0开始
+        #sheet=wb.sheet_by_name('sheet1')#按名称获取sheet内容
+        #创建表单sheet
+        table_w = wb.add_sheet(str(num+1), cell_overwrite_ok=True)
+        nrows = sheet.nrows#获取行数
+        ncols = sheet.ncols#获取列数
+        for i in range(nrows):
+            seg_list = jieba.cut(str(sheet.row(i)[1].value))#获取列的值
+            value = "/".join(list(seg_list))
+            print(value)
+            if i > 0:
+                # 向单元格内写入内容：写入地i行，第0列内容
+                table_w.write(i, 0, i)
+                table_w.write(i, 1, sheet.row_values(i)[1])
+                table_w.write(i, 2, value)
+            else:
+                table_w.write(0, 0, "序号")
+                table_w.write(0, 1, "原词")
+                table_w.write(0, 2, "分词结果")
+        num+=1
+    #保存
+    file.save("excel\\0001.xls")
+
+
+
+if __name__=="__main__":
+    read_file_cut() #对文本文件分词
+    read_excel_cut()#对Excel文件分词
